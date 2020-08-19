@@ -29,6 +29,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
+class Content(models.Model):
+    user = models.ForeignKey(CustomUser, related_name='content_user', on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+    body = models.TextField()
+    summary = models.TextField()
+    document = models.FileField(upload_to='images/')
+
 # test@test.com
 # Test@123
 # python manage.py runserver
