@@ -18,7 +18,7 @@ class CustomUserAdmin(UserAdmin):
 
     group.short_description = 'Groups'
 
-    list_display = ('email', 'mobile_nmber', 'pin_code', 'is_staff', 'is_active', 'group', )
+    list_display = ('email', 'mobile_number', 'pin_code', 'is_staff', 'is_active', 'group', )
     list_filter = ('email', 'is_staff', 'is_active',)
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
