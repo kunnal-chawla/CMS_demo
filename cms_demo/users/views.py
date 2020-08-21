@@ -4,14 +4,12 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import authentication
 from rest_framework.views import APIView
-from rest_framework import status
-from django.http import Http404
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import authentication_classes
+from django.http import Http404, HttpResponseNotAllowed
 from .serializers import UserSerializer, RegisterSerializer, ContentSerializer
 from .models import Content
-from .validators import title_validation, doc_validation, body_validation, summary_validation
 from .messages import Messages
+from .generic_variables import Groups
+
 
 # Register API
 @api_view(['POST',])
@@ -28,7 +26,6 @@ def registration_view(request):
 
 
 class ContentView(APIView):
-    parser_class = (MultiPartParser, FormParser)
     permission_classes = (IsAuthenticated,)
     authentication_classes = [authentication.TokenAuthentication]
 
@@ -39,12 +36,16 @@ class ContentView(APIView):
             raise Http404
 
     def get(self, request):
+        if not request.user.groups.filter(name=Groups.Author).exists():
+            return HttpResponseNotAllowed(('GET',))
         user = request.user
         content = Content.objects.filter(user=user)
         serializer = ContentSerializer(content, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        if not request.user.groups.filter(name=Groups.Author).exists():
+            return HttpResponseNotAllowed(('POST',))
         context = {'email': request.user.email}
         serializer = ContentSerializer(data=request.data, context=context)
         if serializer.is_valid():
@@ -53,6 +54,8 @@ class ContentView(APIView):
         return Response(serializer.errors)
 
     def put(self, request, pk):
+        if not request.user.groups.filter(name=Groups.Author).exists():
+            return HttpResponseNotAllowed(('PUT',))
         content = self.get_object(pk)
         serializer = ContentSerializer(content, data=request.data, partial=True)
         if serializer.is_valid():
@@ -61,16 +64,43 @@ class ContentView(APIView):
         return Response(serializer.errors)
 
     def delete(self, request, pk):
+        if not request.user.groups.filter(name=Groups.Author).exists():
+            return HttpResponseNotAllowed(('DELETE',))
         content = self.get_object(pk)
         content.delete()
         return Response({'message': Messages.code.get('200')})
 
-# Content upload api
-@api_view(['POST',])
-@authentication_classes([authentication.TokenAuthentication])
-def content_upload(request):
-    serializer = ContentSerializer(data=request.data, )
-    if serializer.is_valid():
-        serializer.save()
+
+class AdminContentView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = [authentication.TokenAuthentication]
+
+    def get_object(self, pk):
+        try:
+            return Content.objects.get(pk=pk)
+        except Content.DoesNotExist:
+            raise Http404
+
+    def get(self, request):
+        if not request.user.groups.filter(name=Groups.Admin).exists():
+            return HttpResponseNotAllowed(('GET',))
+        content = Content.objects.all()
+        serializer = ContentSerializer(content, many=True)
         return Response(serializer.data)
-    return Response(serializer.errors)
+
+    def put(self, request, pk):
+        if not request.user.groups.filter(name=Groups.Admin).exists():
+            return HttpResponseNotAllowed(('PUT',))
+        content = self.get_object(pk)
+        serializer = ContentSerializer(content, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors)
+
+    def delete(self, request, pk):
+        if not request.user.groups.filter(name=Groups.Admin).exists():
+            return HttpResponseNotAllowed(('DELETE',))
+        content = self.get_object(pk)
+        content.delete()
+        return Response({'message': Messages.code.get('200')})
