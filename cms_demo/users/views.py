@@ -9,6 +9,7 @@ from .serializers import UserSerializer, RegisterSerializer, ContentSerializer
 from .models import Content
 from .messages import Messages
 from .generic_variables import Groups
+from rest_framework import generics
 
 
 # Register API
@@ -104,3 +105,21 @@ class AdminContentView(APIView):
         content = self.get_object(pk)
         content.delete()
         return Response({'message': Messages.code.get('200')})
+
+
+class ContentList(generics.ListAPIView):
+    model = Content
+    serializer_class = ContentSerializer
+
+    def get_queryset(self):
+        queryset = Content.objects.filter(user=self.request.user)
+        title = self.request.query_params.get("title")
+        summary = self.request.query_params.get("summary")
+        body = self.request.query_params.get("body")
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if summary:
+            queryset = queryset.filter(summary__icontains=summary)
+        if body:
+            queryset = queryset.filter(body__icontains=body)
+        return queryset
