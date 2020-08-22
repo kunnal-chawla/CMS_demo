@@ -1,5 +1,8 @@
 
 class Messages:
+    """
+        This class represents the complete api messages used in the cms application
+    """
     code = {
             # Validation Messages
             '101': 'Please Enter Valid Mobile number',

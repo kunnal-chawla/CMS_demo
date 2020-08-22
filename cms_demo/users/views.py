@@ -1,20 +1,49 @@
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import authentication
-from rest_framework.views import APIView
 from django.http import Http404, HttpResponseNotAllowed
-from .serializers import UserSerializer, RegisterSerializer, ContentSerializer
+
+from rest_framework import authentication
+from rest_framework import generics
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .generic_variables import Groups
 from .models import Content
 from .messages import Messages
-from .generic_variables import Groups
-from rest_framework import generics
+from .serializers import UserSerializer, RegisterSerializer, ContentSerializer
 
 
-# Register API
+# Registerion API
 @api_view(['POST',])
 def registration_view(request):
+    """
+    This API is used to Register new user as an Author into cms system
+    :param request: mobile_number, full_name, password, pin_code
+    :return: Response object
+
+    Example:
+    Endpoint: http://localhost:8000/api/author/registeration/
+
+    Request:
+    {
+    "mobile_number": 9889878987,
+    "full_name": "kunnal chawla",
+    "email": "kunnal@gmail.com",
+    "password": "Test@123",
+    "pin_code": 400044
+    }
+
+    Response:
+    {
+        "user": {
+            "mobile_number": 9889878987,
+            "full_name": "knnal chawla",
+            "email": "knnal@gmail.com"
+    },
+        "token": "8d5c91ea256d2234a0df09cb98f58d10da8d7b5e"
+    }
+    """
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
@@ -27,6 +56,15 @@ def registration_view(request):
 
 
 class ContentView(APIView):
+    """
+        This is a class based APIView designed to perform all the CRUD operation
+        required by custom user (Author) on its content
+        Endpoints:
+            http://localhost:8000/api/author/content/create
+            http://localhost:8000/api/author/content/my-content
+            http://localhost:8000/api/author/content/update/1/
+            http://localhost:8000/api/author/content/delete/1/
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = [authentication.TokenAuthentication]
 
@@ -73,6 +111,14 @@ class ContentView(APIView):
 
 
 class AdminContentView(APIView):
+    """
+        This is a class based APIView designed to perform all the Read, Write
+        and delete operation required by custom user (CMS Admin) on content
+        Endpoints:
+            http://localhost:8000/api/admin/content/view/all-content
+            http://localhost:8000/api/admin/content/update/1/
+            http://localhost:8000/api/admin/content/delete/1/
+        """
     permission_classes = (IsAuthenticated,)
     authentication_classes = [authentication.TokenAuthentication]
 
@@ -108,6 +154,17 @@ class AdminContentView(APIView):
 
 
 class ContentList(generics.ListAPIView):
+    """
+        This class is based on ListAPIView which enables a user(Author) to
+        filter their content depending upon content title, content summary,
+        content body or combination of all/some
+
+        Example:
+            http://localhost:8000/api/author/content/filter?title=XXXX&body=XXXX&summary=XXXX
+            http://localhost:8000/api/author/content/filter?title=XXXX&summary=XXXX
+            http://localhost:8000/api/author/content/filter?summary=XXXX
+            http://localhost:8000/api/author/content/filter
+    """
     model = Content
     serializer_class = ContentSerializer
 

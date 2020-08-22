@@ -1,6 +1,7 @@
-from rest_framework import serializers
-from .models import CustomUser, Content
 from django.contrib.auth.models import Group
+from rest_framework import serializers
+
+from .models import CustomUser, Content
 from .validators import mobile_number_validator, \
     email_validator, full_name_validator, doc_validation,\
     password_validator, pin_code_validator, \
@@ -9,6 +10,9 @@ from .validators import mobile_number_validator, \
 
 # User Serializer
 class UserSerializer(serializers.ModelSerializer):
+    """
+        This searializer is used for searialise custom user details
+    """
     class Meta:
         model = CustomUser
         fields = ('mobile_number', 'full_name', 'email')
@@ -16,17 +20,24 @@ class UserSerializer(serializers.ModelSerializer):
 
 # Register Serializer
 class RegisterSerializer(serializers.ModelSerializer):
+    """
+        This searializer is used for registering custom user ( Author )
+    """
     mobile_number = serializers.IntegerField(validators=[mobile_number_validator])
     full_name = serializers.CharField(validators=[full_name_validator])
     email = serializers.CharField(validators=[email_validator])
     password = serializers.CharField(validators=[password_validator])
     pin_code = serializers.CharField(validators=[pin_code_validator])
+
     class Meta:
         model = CustomUser
         fields = ('mobile_number', 'full_name', 'email', 'password', 'pin_code')
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
+        """
+        Create and return `CustomUser` instance, given the validated data.
+        """
         user = CustomUser.objects.create(**validated_data)
         user.set_password(validated_data['password'])
         user.save()
@@ -37,6 +48,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 # Content Serializer
 class ContentSerializer(serializers.ModelSerializer):
+    """
+        This searializer is used for content creation done by custom user (Author)
+    """
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     title = serializers.CharField(validators=[title_validation])
     body = serializers.CharField(validators=[body_validation])
@@ -44,6 +58,9 @@ class ContentSerializer(serializers.ModelSerializer):
     document = serializers.FileField(validators=[doc_validation])
 
     def create(self, validated_data):
+        """
+        Create and return an existing `content` instance, given the validated data.
+        """
         email = self.context.get('email')
         user_instance = CustomUser.objects.get(email=email)
         content = Content.objects.create(**validated_data, user=user_instance)
